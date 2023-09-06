@@ -69,22 +69,8 @@ class BinaryUtils:
             return True
 
     def _write_middle(self, file_path: str, text: bytes, position: int) -> bool:
-        file_size = os.path.getsize(file_path)
-        text_size = len(text)
-
-    def _write_end(self, file_path: str, text: bytes) -> bool:
-        file_size = os.path.getsize(file_path)
-        text_size = len(text)
-
         with open(file_path, mode='rb+') as file:
-            characters_copy = file.read(file_size)
-
-            for character in characters_copy:
-                correct_character = 0xff & character
-                correct_character = correct_character.to_bytes(
-                    1, sys.byteorder)
-
-                file.write(correct_character)
+            file.seek(position, 0)
 
             for character in text:
                 correct_character = 0xff & character
@@ -92,6 +78,23 @@ class BinaryUtils:
                     1, sys.byteorder)
 
                 file.write(correct_character)
+        
+        return True
+
+    def _write_end(self, file_path: str, text: bytes) -> bool:
+        file_size = os.path.getsize(file_path)
+
+        with open(file_path, mode='rb+') as file:
+            file.seek(file_size, 0)
+
+            for character in text:
+                correct_character = 0xff & character
+                correct_character = correct_character.to_bytes(
+                    1, sys.byteorder)
+
+                file.write(correct_character)
+        
+        return True
 
     def write(self, file_path: str, text: bytes, position: int) -> bool:
         file_size = os.path.getsize(file_path)
@@ -106,9 +109,8 @@ class BinaryUtils:
         
         if position >= 0 and position < file_size:
             self._write_middle(file_path, text, position)
+            return True
         
         if position >= file_size:
             self._write_end(file_path, text)
             return True
-
-        return True
