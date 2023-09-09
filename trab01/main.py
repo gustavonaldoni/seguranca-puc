@@ -14,7 +14,4 @@ if __name__ == '__main__':
     end = start + len(text) - 1
 
     binary_utils.write('./image01_safecopy.jpeg', text, start)
-
     print(binary_utils.diff('./image01_safecopy.jpeg', './image01.jpeg'))
-
-    # binary_utils.safe_copy('./image01_safecopy.jpeg', './texto_recuperado.txt', start, end)
