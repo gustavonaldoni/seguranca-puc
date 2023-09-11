@@ -5,6 +5,7 @@ DEFAULT_PATH = 'DEFAULT_PATH'
 DEFAULT_WRITE_MODE = 'wb'
 FILE_SIZE = 0
 
+
 class BinaryUtils:
     def _generate_default_file_path(self, file_path: str):
         for i in range(len(file_path))[::-1]:
@@ -18,13 +19,31 @@ class BinaryUtils:
         result = f'{result}_safecopy.{file_extension}'
 
         return result
-    
-    def _get_correct_byte(self, byte: bytes) -> bytes:
-        correct_byte = 0xFF & byte[0]
-        correct_byte = correct_byte.to_bytes(1, sys.byteorder)
 
+    def _get_correct_byte(self, byte: bytes | int) -> bytes:
+        """
+        Returns the copy of a byte or integer bit to bit.
+        """
+        if isinstance(byte, int):
+            correct_byte = 0xFF & byte
+        elif isinstance(byte, bytes):
+            correct_byte = 0xFF & byte[0]
+        else:
+            raise TypeError('<byte> argument must be of type <bytes> or <int>')
+
+        correct_byte = correct_byte.to_bytes(1, sys.byteorder)
         return correct_byte
-    
+
+    def save_bytes_to_file(self, file_path: str, text: bytes):
+        """
+        Save the text passed as bytes string to a file,
+        bit to bit. If the file exists it is overwritten.
+        """
+        with open(file_path, mode='wb') as file:
+            for character in text:
+                correct_character = character.to_bytes(1, sys.byteorder)
+                file.write(correct_character)
+
     def safe_copy_part(self, file_path: str, start: int, end: int, resulting_file_path: str = DEFAULT_PATH, write_mode: str = DEFAULT_WRITE_MODE):
         """
         Copies a file bit to bit from start to end indexes.
@@ -80,14 +99,11 @@ class BinaryUtils:
             file.seek(-file_size, 1)
 
             for character in text:
-                correct_character = character.to_bytes(1, sys.byteorder)
+                correct_character = self._get_correct_byte(character)
                 file.write(correct_character)
 
             for character in characters_copy:
-                correct_character = 0xff & character
-                correct_character = correct_character.to_bytes(
-                    1, sys.byteorder)
-
+                correct_character = self._get_correct_byte(character)
                 file.write(correct_character)
 
             return True
@@ -97,10 +113,7 @@ class BinaryUtils:
             file.seek(position, 0)
 
             for character in text:
-                correct_character = 0xff & character
-                correct_character = correct_character.to_bytes(
-                    1, sys.byteorder)
-
+                correct_character = self._get_correct_byte(character)
                 file.write(correct_character)
 
         return True
@@ -131,7 +144,8 @@ class BinaryUtils:
         text_size = len(text)
 
         if position < -text_size:
-            raise IndexError('Your text cannot fill the entire beggining of the file.')
+            raise IndexError(
+                'Your text cannot fill the entire beggining of the file.')
 
         if position < 0 and abs(position) == text_size:
             self._write_beggining(file_path, text)
@@ -144,7 +158,7 @@ class BinaryUtils:
         if position >= file_size:
             self._write_end(file_path, text)
             return True
-        
+
     def _diff_same_size(self, file_path1: str, file_path2: str) -> bytes:
         diff = bytearray()
 
@@ -156,7 +170,7 @@ class BinaryUtils:
                 if character1 != character2:
                     correct_character = self._get_correct_byte(character2)
                     diff.append(ord(correct_character))
-                
+
                 character1 = file1.read(1)
                 character2 = file2.read(1)
 
@@ -180,7 +194,7 @@ class BinaryUtils:
 
                     character1 = file1.read(1)
                     character2 = file2.read(1)
- 
+
         else:
             with open(file_path1, mode='rb') as file1, open(file_path2, mode='rb') as file2:
                 character1 = file1.read(1)
@@ -193,13 +207,13 @@ class BinaryUtils:
 
                     character1 = file1.read(1)
                     character2 = file2.read(1)
-                
+
                 while character2:
                     correct_character = self._get_correct_byte(character2)
                     diff.append(ord(correct_character))
 
                     character2 = file2.read(1)
-        
+
         return bytes(diff)
 
     def diff(self, file_path1: str, file_path2: str) -> bytes:
